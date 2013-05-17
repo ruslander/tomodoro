@@ -1,0 +1,122 @@
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+    <title>tomato</title>
+
+    <style>
+      body {
+        text-align: center;
+      }
+      
+      #g1 {
+        width:200px; height:160px;
+        display: inline-block;
+        margin: 1em;
+      }
+          
+      p {
+        display: block;
+        width: 450px;
+        margin: 2em auto;
+        text-align: left;
+      }
+    </style>
+
+
+    <script src="/static/raphael.2.1.0.min.js"></script>
+    <script src="/static/justgage.1.0.1.min.js"></script>
+    <script src="/static/jquery.min.js"></script>
+    <script type="text/javascript">
+      
+      var websocket;
+      $(document).ready(init);
+      
+      function init() {
+          if(!("WebSocket" in window)){  
+              $('#status').append('<p><span style="color: red;">websockets are not supported </span></p>');
+          } else {
+              $('#status').append('<p><span style="color: green;">websockets are supported </span></p>');
+              connect();
+          };
+
+          g1 = new JustGage({
+            id: "g1", 
+            value: 0, 
+            min: 0,
+            max: 300,
+            title: "#1 tomodoro",
+            label: "",
+            levelColorsGradient: false
+        });
+
+      };
+
+      function connect()
+      {
+          websocket = new WebSocket("ws://localhost:8080/websocket");
+          websocket.onopen = function(evt) { onOpen(evt) }; 
+          websocket.onclose = function(evt) { onClose(evt) }; 
+          websocket.onmessage = function(evt) { onMessage(evt) }; 
+          websocket.onerror = function(evt) { onError(evt) }; 
+      };  
+      
+      function sendMessage(message) {
+          if(websocket.readyState == websocket.OPEN){
+              websocket.send(message);
+              showScreen('sending: ' + message); 
+          } else {
+               showScreen('websocket is not connected'); 
+          };
+      };
+
+      function onOpen(evt) { 
+          showScreen('<span style="color: green;">CONNECTED </span>'); 
+      };  
+
+      function onClose(evt) { 
+          showScreen('<span style="color: red;">DISCONNECTED </span>');
+      };  
+
+      function onMessage(evt) { 
+          displayTime(evt.data);
+      };  
+
+      function voidTomato() 
+      { 
+          sendMessage("void");
+          displayTime(0);
+      };
+      
+      function startTomato() 
+      { 
+          sendMessage("start");
+          displayTime(0);
+      };
+
+      function displayTime(time){
+          g1.refresh(time);
+      }
+
+      function showScreen(txt) {
+          $('#output').prepend('<p>' + txt + '</p>');
+      };
+
+    </script>
+  </head>
+
+  <body>
+
+    <div id="monitor">
+        <p>
+          <div id="g1"></div>
+        </p>
+        <div>
+          <button id="start" onclick="startTomato()" >start</button>
+          <button id="void" onclick="voidTomato()" >void</button>
+        </div>
+        <div id="status"></div>
+        <div id="output"></div>
+    </div>
+
+  </body>
+</html> 
